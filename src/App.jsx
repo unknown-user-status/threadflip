@@ -91,7 +91,7 @@ function Landing() {
           <div className="feature-card">
             <div className="feature-icon">🎯</div>
             <h3>Platform-optimized</h3>
-            <p>Each format is tuned for its platform — LinkedIn tone, blog structure, newsletter style.</p>
+            <p>Twitter, LinkedIn, Bluesky, Threads, Instagram, TikTok, Mastodon & more — each output is tuned for its platform.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">📊</div>

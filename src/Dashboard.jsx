@@ -36,6 +36,11 @@ export default function Dashboard() {
     else if (/linkedin\.com/i.test(url)) setDetectedPlatform('💼 LinkedIn')
     else if (/reddit\.com/i.test(url)) setDetectedPlatform('🤖 Reddit')
     else if (/medium\.com|substack\.com/i.test(url)) setDetectedPlatform('📝 Blog')
+    else if (/bsky\.app|bluesky\.social/i.test(url)) setDetectedPlatform('🦋 Bluesky')
+    else if (/threads\.net/i.test(url)) setDetectedPlatform('👁️ Threads')
+    else if (/mastodon\.social|mastodon\./i.test(url)) setDetectedPlatform('🔵 Mastodon')
+    else if (/instagram\.com/i.test(url)) setDetectedPlatform('📸 Instagram')
+    else if (/tiktok\.com/i.test(url)) setDetectedPlatform('🎵 TikTok')
     else setDetectedPlatform('🔗 Unknown')
   }, [url])
 
@@ -166,7 +171,7 @@ export default function Dashboard() {
             onChange={e => setUrl(e.target.value)}
           />
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-            Supports: X/Twitter, LinkedIn, Reddit, Medium, Substack
+            Supports: X/Twitter, LinkedIn, Bluesky, Threads, Mastodon, Instagram, TikTok, Reddit, Medium, Substack
           </p>
         </div>
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application
+        android:allowBackup="true"
+        android:label="SmartWriter AI"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SmartWriter"
+        android:usesCleartextTraffic="true">
+        <activity android:name=".MainActivity" android:exported="true" android:label="SmartWriter AI">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".SettingsActivity" android:exported="false" android:label="Settings" />
+        <activity android:name=".HistoryActivity" android:exported="false" android:label="History" />
+        <activity android:name=".ResultDetailActivity" android:exported="false" android:label="Result" />
+    </application>
+</manifest>

@@ -1,0 +1,46 @@
+[
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_item_history.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/item_history.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_activity_settings.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/activity_settings.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_activity_history.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/activity_history.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_dialog_support.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/dialog_support.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/drawable_bg_card_modern.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/drawable/bg_card_modern.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/drawable_card_background.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/drawable/card_background.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_activity_main.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/drawable_bg_header_gradient.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/drawable/bg_header_gradient.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/layout_activity_result_detail.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/layout/activity_result_detail.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/drawable_bg_button_gradient.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/drawable/bg_button_gradient.xml"
+    },
+    {
+        "merged": "com.codex.smartwriter.app-merged_res-32:/drawable_bg_input.xml.flat",
+        "source": "com.codex.smartwriter.app-main-34:/drawable/bg_input.xml"
+    }
+]

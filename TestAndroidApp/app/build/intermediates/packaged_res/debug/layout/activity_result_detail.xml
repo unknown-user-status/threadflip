@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#FFFBFE">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingTop="16dp" android:paddingBottom="16dp"
+        android:background="@drawable/bg_header_gradient">
+        <Button android:id="@+id/backBtn" android:layout_width="44dp" android:layout_height="44dp"
+            android:text="←" android:textSize="22sp" android:textColor="#FFFFFF"
+            android:background="@android:color/transparent"
+            style="@style/Widget.AppCompat.Button.Borderless" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Result" android:textSize="22sp"
+            android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginStart="4dp" />
+    </LinearLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:padding="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView android:id="@+id/inputLabel" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold"
+                android:textColor="#625B71" android:layout_marginBottom="4dp" />
+            <androidx.cardview.widget.CardView android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp" app:cardElevation="1dp" app:cardBackgroundColor="#F5F3F7">
+                <TextView android:id="@+id/inputText" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:padding="14dp" android:textSize="14sp"
+                    android:textColor="#1C1B1F" />
+            </androidx.cardview.widget.CardView>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Generated Result" android:textSize="16sp" android:textStyle="bold"
+                android:textColor="#1C1B1F" android:layout_marginBottom="8dp" />
+            <androidx.cardview.widget.CardView android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginBottom="16dp"
+                app:cardCornerRadius="14dp" app:cardElevation="3dp" app:cardBackgroundColor="@android:color/white">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="16dp">
+                    <TextView android:id="@+id/outputText" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:textSize="14sp"
+                        android:textColor="#1C1B1F" android:lineSpacingExtra="6dp"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center" android:padding="12dp"
+        android:background="@android:color/white" android:elevation="8dp">
+        <Button android:id="@+id/copyBtn" android:layout_width="0dp" android:layout_height="48dp"
+            android:layout_weight="1" android:text="📋  Copy All" android:textSize="14sp"
+            android:textColor="#6750A4" android:background="@drawable/bg_input"
+            android:layout_marginEnd="6dp" />
+        <Button android:id="@+id/shareBtn" android:layout_width="0dp" android:layout_height="48dp"
+            android:layout_weight="1" android:text="📤  Share" android:textSize="14sp"
+            android:textColor="#6750A4" android:background="@drawable/bg_input"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+</LinearLayout>

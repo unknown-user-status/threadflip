@@ -41,7 +41,10 @@ const PROMPTS = {
 }
 
 const PLATFORM_LABELS = {
-  twitter: 'Twitter / X', linkedin: 'LinkedIn', reddit: 'Reddit', blog: 'Blog', unknown: 'Unknown',
+  twitter: 'Twitter / X', linkedin: 'LinkedIn', reddit: 'Reddit',
+  blog: 'Blog', bluesky: 'Bluesky', threads: 'Threads',
+  mastodon: 'Mastodon', instagram: 'Instagram', tiktok: 'TikTok',
+  unknown: 'Unknown',
 }
 
 function detectPlatform(url) {
@@ -49,6 +52,11 @@ function detectPlatform(url) {
   if (/linkedin\.com/i.test(url)) return 'linkedin'
   if (/reddit\.com/i.test(url)) return 'reddit'
   if (/medium\.com|substack\.com/i.test(url)) return 'blog'
+  if (/bsky\.app|bluesky\.social/i.test(url)) return 'bluesky'
+  if (/threads\.net/i.test(url)) return 'threads'
+  if (/mastodon\.social|mastodon\./i.test(url)) return 'mastodon'
+  if (/instagram\.com/i.test(url)) return 'instagram'
+  if (/tiktok\.com/i.test(url)) return 'tiktok'
   return 'unknown'
 }
 
