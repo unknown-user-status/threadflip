@@ -2004,16 +2004,10 @@ function initGlobe() {
   
   try {
     const globe = Globe()
-      .globeImageUrl(null) // Use custom colors instead
+      // Using default Earth texture from NASA
       .backgroundColor('rgba(7,6,26,0)')
       .atmosphereColor('#00f0ff')
       .atmosphereAltitude(0.25)
-      .hexBinPointWeight('weight')
-      .hexAltitude(d => d.sumWeight * 0.05)
-      .hexBinResolution(4)
-      .hexTopColor(d => d.color)
-      .hexSideColor(d => d.color)
-      .hexTransitionDuration(500)
       .pointAltitude(0.05)
       .pointColor(() => '#ff006e')
       .pointRadius(0.35)
@@ -2027,7 +2021,7 @@ function initGlobe() {
       .labelColor(() => 'rgba(255,255,255,0.7)')
       .labelDotRadius(0.3)
       .labelSize(2)
-      .labelText('label')
+      .pointLabel(d => d.label || "")
       .onGlobeReady(() => {
         console.log('🌍 Globe ready');
       })(container);
@@ -2040,14 +2034,14 @@ function initGlobe() {
         
         globe
           .polygonsData(countries)
-          .polygonAltitude(0.01)
+          .polygonAltitude(0.03)
           .polygonCapColor(d => {
             if (d.id === '458') return '#ff006e'; // Malaysia
             if (['360','104','524','050','608','704'].includes(d.id)) return '#00f0ff'; // Source countries
-            return 'rgba(0,240,255,0.04)';
+            return 'rgba(0,240,255,0.15)';
           })
-          .polygonSideColor(() => 'rgba(0,0,0,0.1)')
-          .polygonStrokeColor(() => 'rgba(0,240,255,0.08)')
+          .polygonSideColor(() => 'rgba(0,240,255,0.06)')
+          .polygonStrokeColor(() => 'rgba(0,240,255,0.12)')
           .polygonTransitionDuration(500);
         
         // Add arcs: source → Malaysia
@@ -2066,10 +2060,11 @@ function initGlobe() {
         globe.pointsData(points);
         
         // Add labels
-        globe.labelsData(points.map(p => ({ ...p, label: p.label.split(',')[0] })));
+        globe.labelsData(points.map(p => ({ ...p, label: p.label.split(',')[0] })))
+            .pointLabel(d => d.label || '');
       })
       .catch(err => {
-        console.warn('🌍 Could not load country boundaries:', err);
+        console.warn('🌍 Could not load country boundaries:', err.message || err);
         // Still show points and arcs
         const arcs = flowData.map(d => ({
           startLat: d.lat, startLng: d.lng, endLat: malaysia.lat, endLng: malaysia.lng,
@@ -2081,7 +2076,10 @@ function initGlobe() {
           ...flowData.map(d => ({ lat: d.lat, lng: d.lng, label: d.city, weight: d.weight })),
           { lat: malaysia.lat, lng: malaysia.lng, label: 'Kuala Lumpur', weight: 100 },
         ]);
-        globe.labelsData([]);
+        globe.labelsData([])
+            .pointLabel(d => d.label || '');
+        // Ensure globe renders even without country polygons
+        globe.pointOfView({ altitude: 2.0 });
       });
     
     // Auto-rotate

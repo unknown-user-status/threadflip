@@ -41,6 +41,7 @@ export default function Dashboard() {
     else if (/mastodon\.social|mastodon\./i.test(url)) setDetectedPlatform('🔵 Mastodon')
     else if (/instagram\.com/i.test(url)) setDetectedPlatform('📸 Instagram')
     else if (/tiktok\.com/i.test(url)) setDetectedPlatform('🎵 TikTok')
+    else if (/facebook\.com|fb\.com/i.test(url)) setDetectedPlatform('👍 Facebook')
     else setDetectedPlatform('🔗 Unknown')
   }, [url])
 
@@ -171,7 +172,7 @@ export default function Dashboard() {
             onChange={e => setUrl(e.target.value)}
           />
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-            Supports: X/Twitter, LinkedIn, Bluesky, Threads, Mastodon, Instagram, TikTok, Reddit, Medium, Substack
+            Supports: X/Twitter, LinkedIn, Facebook, Bluesky, Threads, Mastodon, Instagram, TikTok, Reddit, Medium, Substack
           </p>
         </div>
 

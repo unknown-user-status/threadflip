@@ -9,6 +9,27 @@ import helmet from 'helmet'
 import Stripe from 'stripe'
 import OpenAI from 'openai'
 
+// ── AI Provider config (supports OpenAI, Fiqstr, or any OpenAI-compatible API) ──
+const AI_PROVIDER = process.env.AI_PROVIDER || 'openai'
+const AI_BASE_URL = process.env.AI_BASE_URL || ''
+const AI_MODEL = process.env.AI_MODEL || ''
+const AI_API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || ''
+
+let aiClient = null
+let aiModel = 'gpt-4o-mini'
+if (AI_API_KEY) {
+  const config = { apiKey: AI_API_KEY }
+  if (AI_PROVIDER === 'fiqstr') {
+    // Fiqstr — Premium: core.fiqstr.com | Plus: api.cybersecdev.cloud
+    config.baseURL = AI_BASE_URL || 'https://core.fiqstr.com/v1'
+    aiModel = AI_MODEL || 'fiq/claude-opus-4.8'
+  } else if (AI_PROVIDER === 'custom') {
+    config.baseURL = AI_BASE_URL
+    aiModel = AI_MODEL || 'gpt-4o-mini'
+  }
+  aiClient = new OpenAI(config)
+}
+
 const app = express()
 
 // ── Security ──
@@ -44,6 +65,7 @@ const PLATFORM_LABELS = {
   twitter: 'Twitter / X', linkedin: 'LinkedIn', reddit: 'Reddit',
   blog: 'Blog', bluesky: 'Bluesky', threads: 'Threads',
   mastodon: 'Mastodon', instagram: 'Instagram', tiktok: 'TikTok',
+  facebook: 'Facebook',
   unknown: 'Unknown',
 }
 
@@ -57,6 +79,7 @@ function detectPlatform(url) {
   if (/mastodon\.social|mastodon\./i.test(url)) return 'mastodon'
   if (/instagram\.com/i.test(url)) return 'instagram'
   if (/tiktok\.com/i.test(url)) return 'tiktok'
+  if (/facebook\.com|fb\.com/i.test(url)) return 'facebook'
   return 'unknown'
 }
 
@@ -75,7 +98,9 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     stripe: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_')),
-    openai: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')),
+    ai: !!aiClient,
+    aiProvider: AI_PROVIDER,
+    aiModel: aiModel,
   })
 })
 
@@ -94,10 +119,9 @@ app.post('/api/convert', async (req, res) => {
     const platform = detectPlatform(url)
     let output = ''
 
-    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')) {
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+    if (aiClient) {
+      const completion = await aiClient.chat.completions.create({
+        model: aiModel,
         messages: [
           { role: 'system', content: 'You repurpose social media content for different platforms. Keep meaning, adapt tone.' },
           { role: 'user', content: `${PROMPTS[format]}\n\nURL: ${url}\n(If inaccessible, generate plausible content about tech, productivity, or design.)` },
