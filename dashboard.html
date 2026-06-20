@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5">
+<title>Global Operations Dashboard</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+/* === Reset & Theme === */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--accent2:#06b6d4;--alert:#ef4444;--success:#22c55e;--warning:#f59e0b;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.3)}
+body{font-family:system-ui,-apple-system,Inter,sans-serif;background:var(--bg);color:var(--text);padding:1rem;min-height:100vh}
+.dashboard{max-width:1400px;margin:0 auto;display:grid;gap:1rem}
+
+/* === Header === */
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:.75rem 0}
+header h1{font-size:1.35rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+header h1 small{font-size:.8rem;font-weight:400;color:var(--muted)}
+.status-bar{display:flex;gap:1rem;font-size:.8rem;color:var(--muted);align-items:center}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.last-updated{font-variant-numeric:tabular-nums}
+
+/* === KPI Row === */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
+.kpi-card{background:var(--surface);border-radius:var(--radius);padding:1rem 1.25rem;box-shadow:var(--shadow)}
+.kpi-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi-card .value{font-size:1.75rem;font-weight:700;line-height:1.3;margin-top:.15rem}
+.kpi-card .trend{font-size:.8rem;margin-top:.25rem}
+.kpi-card .trend.up{color:var(--success)}
+.kpi-card .trend.down{color:var(--alert)}
+.kpi-card .sub{font-size:.75rem;color:var(--muted);margin-top:.1rem}
+
+/* === Panel Grid === */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.panel{background:var(--surface);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);min-height:320px}
+.panel.full{grid-column:1/-1}
+.panel h3{font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem}
+.panel .chart-wrap{position:relative;width:100%;height:auto}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.panel .map-container{width:100%;height:340px;position:relative}
+
+/* === Chart elements === */
+.axis text{fill:var(--muted);font-size:.7rem}
+.axis .domain,.axis .tick line{stroke:var(--surface2);stroke-opacity:.5}
+.grid line{stroke:var(--surface2);stroke-opacity:.3;stroke-dasharray:3,3}
+.line-path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.line-path.stream{stroke:var(--accent2)}
+.area-fill{fill:url(#areaGrad);opacity:.4}
+.bar-rect{fill:var(--accent);transition:fill .2s;cursor:pointer}
+.bar-rect:hover{fill:var(--accent2)}
+.bar-rect.highlight{fill:var(--warning)}
+.label-text{fill:var(--text);font-size:.65rem;text-anchor:middle;font-weight:500;pointer-events:none}
+.annotation-text{fill:var(--alert);font-size:.7rem;font-weight:600}
+.annotation-line{stroke:var(--alert);stroke-width:1;stroke-dasharray:4,3}
+
+/* === Map === */
+.map-svg{width:100%;height:100%;background:#0b1629}
+.land{fill:#1e293b;stroke:#334155;stroke-width:.5}
+.map-point{fill:var(--accent);stroke:#fff;stroke-width:1;cursor:pointer;transition:r .2s,fill .2s}
+.map-point:hover{fill:var(--warning)}
+.map-point.active{fill:var(--success)}
+.map-label{fill:var(--muted);font-size:.55rem;pointer-events:none}
+
+/* === Controls === */
+.controls{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+.control-btn{background:var(--surface2);border:none;color:var(--text);padding:.4rem .85rem;border-radius:6px;font-size:.78rem;cursor:pointer;transition:background .2s}
+.control-btn:hover{background:#475569}
+.control-btn.active{background:var(--accent);color:#fff}
+.control-btn.active:hover{background:#2563eb}
+
+/* === Legend === */
+.legend{display:flex;flex-wrap:wrap;gap:1rem;margin-top:.5rem;font-size:.75rem;color:var(--muted)}
+.legend-item{display:flex;align-items:center;gap:.35rem}
+.legend-swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* === Responsive === */
+@media(max-width:768px){
+  body{padding:.5rem}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .kpi-card .value{font-size:1.3rem}
+  .panels{grid-template-columns:1fr}
+  .panel{min-height:280px}
+  .panel .map-container{height:260px}
+  header h1{font-size:1.1rem}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr;gap:.5rem}
+  .kpi-card{padding:.75rem}
+  .kpi-card .value{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Header -->
+  <header>
+    <h1>
+      <span>🌍 Global Operations</span>
+      <small>· Live Monitoring</small>
+    </h1>
+    <div class="status-bar">
+      <span><span class="status-dot"></span>Live</span>
+      <span class="last-updated" id="lastUpdated">—</span>
+    </div>
+  </header>
+
+  <!-- KPI Row -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card">
+      <div class="label">Active Sessions</div>
+      <div class="value" id="kpiSessions">12,847</div>
+      <div class="trend up">↑ 3.2% vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Revenue (24h)</div>
+      <div class="value" id="kpiRevenue">$48.2k</div>
+      <div class="trend up">↑ 8.1% vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Error Rate</div>
+      <div class="value" id="kpiErrors">0.34%</div>
+      <div class="trend down">↓ 0.12pp vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Avg Response</div>
+      <div class="value" id="kpiLatency">42ms</div>
+      <div class="trend down">↓ 5ms vs yesterday</div>
+      <div class="sub">p99: 187ms</div>
+    </div>
+  </div>
+
+  <!-- Controls / filter bar -->
+  <div class="controls" id="filterBar">
+    <button class="control-btn active" data-region="all">🌐 All Regions</button>
+    <button class="control-btn" data-region="na">🇺🇸 North America</button>
+    <button class="control-btn" data-region="eu">🇪🇺 Europe</button>
+    <button class="control-btn" data-region="ap">🌏 Asia Pacific</button>
+    <button class="control-btn" data-region="sa">🌎 South America</button>
+  </div>
+
+  <!-- Panels -->
+  <div class="panels">
+
+    <!-- Map Panel -->
+    <div class="panel full">
+      <h3>📍 Regional Coverage · City-level session density</h3>
+      <div class="map-container" id="mapContainer">
+        <svg class="map-svg" id="mapSvg"></svg>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--accent)"></span> Active city</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--warning)"></span> Selected / hovered</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--success)"></span> Region focus</span>
+      </div>
+    </div>
+
+    <!-- Streaming Chart -->
+    <div class="panel">
+      <h3>📈 Real-Time Throughput · <span id="streamLabel">last 60s</span></h3>
+      <div class="chart-wrap">
+        <svg id="streamChart" viewBox="0 0 500 240"></svg>
+      </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="panel">
+      <h3>🏆 Top Cities by Sessions</h3>
+      <div class="chart-wrap">
+        <svg id="barChart" viewBox="0 0 500 240"></svg>
+      </div>
+    </div>
+
+    <!-- Scatter / Correlation -->
+    <div class="panel">
+      <h3>📊 Response Time vs Sessions</h3>
+      <div class="chart-wrap">
+        <svg id="scatterChart" viewBox="0 0 500 240"></svg>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--accent)"></span> City node</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--accent2)"></span> Region avg</span>
+      </div>
+    </div>
+
+    <!-- Donut / Composition -->
+    <div class="panel">
+      <h3>🧩 Traffic by Region</h3>
+      <div class="chart-wrap" style="display:flex;justify-content:center">
+        <svg id="donutChart" viewBox="0 0 200 200" style="max-width:200px"></svg>
+      </div>
+      <div class="legend" id="donutLegend" style="justify-content:center"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+const cities = [
+  {name:'New York',region:'na',lat:40.7128,lon:-74.0060,sessions:2847,revenue:12400,latency:38,trend:'up'},
+  {name:'London',region:'eu',lat:51.5074,lon:-0.1278,sessions:2156,revenue:9800,latency:45,trend:'up'},
+  {name:'Tokyo',region:'ap',lat:35.6762,lon:139.6503,sessions:1892,revenue:8700,latency:52,trend:'down'},
+  {name:'São Paulo',region:'sa',lat:-23.5505,lon:-46.6333,sessions:1245,revenue:5100,latency:68,trend:'up'},
+  {name:'Sydney',region:'ap',lat:-33.8688,lon:151.2093,sessions:984,revenue:4200,latency:55,trend:'down'},
+  {name:'Berlin',region:'eu',lat:52.5200,lon:13.4050,sessions:1638,revenue:7200,latency:41,trend:'up'},
+  {name:'Mumbai',region:'ap',lat:19.0760,lon:72.8777,sessions:2075,revenue:6300,latency:72,trend:'up'},
+  {name:'Toronto',region:'na',lat:43.6532,lon:-79.3832,sessions:1152,revenue:4900,latency:36,trend:'down'},
+  {name:'Bogotá',region:'sa',lat:4.7110,lon:-74.0721,sessions:723,revenue:2800,latency:79,trend:'up'},
+  {name:'Paris',region:'eu',lat:48.8566,lon:2.3522,sessions:1495,revenue:6800,latency:47,trend:'up'},
+  {name:'Singapore',region:'ap',lat:1.3521,lon:103.8198,sessions:1342,revenue:5900,latency:44,trend:'down'},
+  {name:'Lagos',region:'eu',lat:6.5244,lon:3.3792,sessions:612,revenue:2100,latency:92,trend:'up'},
+  {name:'Dubai',region:'ap',lat:25.2048,lon:55.2708,sessions:1045,revenue:4800,latency:39,trend:'up'},
+  {name:'Buenos Aires',region:'sa',lat:-34.6037,lon:-58.3816,sessions:871,revenue:3200,latency:71,trend:'down'},
+  {name:'San Francisco',region:'na',lat:37.7749,lon:-122.4194,sessions:1920,revenue:10500,latency:35,trend:'up'}
+];
+
+const regionColors = {na:'#3b82f6',eu:'#22c55e',ap:'#f59e0b',sa:'#ef4444'};
+
+// ============================================================
+// STATE (URL-backed via hash)
+// ============================================================
+function getState(){
+  const h = location.hash.slice(1);
+  const p = new URLSearchParams(h);
+  return { region: p.get('region') || 'all' };
+}
+function setState(s){
+  const p = new URLSearchParams();
+  if(s.region !== 'all') p.set('region',s.region);
+  const h = p.toString();
+  history.replaceState(null,'',h ? '#'+h : window.location.pathname);
+  applyState(s);
+}
+let state = getState();
+
+// ============================================================
+// WORLD MAP (Equirectangular projection)
+// ============================================================
+function drawMap(filterRegion){
+  const container = document.getElementById('mapContainer');
+  const w = container.clientWidth;
+  const h = container.clientHeight || 340;
+  const svg = d3.select('#mapSvg')
+    .attr('viewBox',`0 0 ${w} ${h}`);
+
+  svg.selectAll('*').remove();
+
+  const projection = d3.geoEquirectangular()
+    .fitSize([w-40,h-40],{type:'Sphere'});
+  const path = d3.geoPath().projection(projection);
+
+  // Graticule and sphere background
+  svg.append('rect').attr('width',w).attr('height',h).attr('fill','#0b1629');
+
+  const graticule = d3.geoGraticule();
+  svg.append('path')
+    .datum(graticule)
+    .attr('d',path)
+    .attr('fill','none')
+    .attr('stroke','#1e293b')
+    .attr('stroke-width',.5);
+
+  // Load world map (simplified TopoJSON-equivalent via GeoJSON URL)
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+    const countries = topojson.feature(world, world.objects.countries);
+    svg.insert('g','.map-points')
+      .selectAll('path')
+      .data(countries.features)
+      .join('path')
+      .attr('d',path)
+      .attr('fill','#1e293b')
+      .attr('stroke','#334155')
+      .attr('stroke-width',.5);
+
+    drawCityPoints(svg, projection, filterRegion);
+  }).catch(() => {
+    // Fallback: just draw points without base map
+    drawCityPoints(svg, projection, filterRegion);
+  });
+}
+
+function drawCityPoints(svg, projection, filterRegion){
+  const filtered = filterRegion === 'all'
+    ? cities : cities.filter(d => d.region === filterRegion);
+
+  // Bubble scale
+  const rScale = d3.scaleSqrt()
+    .domain([0, d3.max(cities, d=>d.sessions)])
+    .range([4, 18]);
+
+  // Points group
+  const g = svg.append('g').attr('class','map-points');
+
+  filtered.forEach(d => {
+    const coords = projection([d.lon, d.lat]);
+    if(!coords) return;
+    g.append('circle')
+      .attr('cx',coords[0]).attr('cy',coords[1])
+      .attr('r',rScale(d.sessions))
+      .attr('fill',regionColors[d.region])
+      .attr('stroke','#fff').attr('stroke-width',1)
+      .attr('opacity',.85)
+      .attr('class','map-point')
+      .on('mouseenter',()=>highlightCity(d.name))
+      .on('mouseleave',clearHighlight);
+
+    g.append('text')
+      .attr('x',coords[0]).attr('y',coords[1]-rScale(d.sessions)-5)
+      .attr('text-anchor','middle')
+      .attr('class','map-label')
+      .text(d.name);
+  });
+}
+
+// ============================================================
+// STREAMING LINE CHART
+// ============================================================
+const streamMaxPoints = 60;
+let streamData = [];
+function initStreamData(){
+  streamData = [];
+  for(let i=0; i<streamMaxPoints; i++){
+    streamData.push({t:i, v: 40 + Math.sin(i/8)*15 + (Math.random()-0.5)*10});
+  }
+}
+initStreamData();
+
+function drawStreamChart(filterRegion){
+  const margin = {top:10,right:16,bottom:24,left:36};
+  const w = 500, h = 240;
+  const iw = w - margin.left - margin.right;
+  const ih = h - margin.top - margin.bottom;
+
+  const svg = d3.select('#streamChart');
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear().domain([0, streamMaxPoints-1]).range([0, iw]);
+  const y = d3.scaleLinear().domain([0, 80]).range([ih, 0]);
+
+  const line = d3.line()
+    .x(d => x(d.t))
+    .y(d => y(d.v))
+    .curve(d3.curveMonotoneX);
+
+  const area = d3.area()
+    .x(d => x(d.t))
+    .y0(ih)
+    .y1(d => y(d.v))
+    .curve(d3.curveMonotoneX);
+
+  // Grid
+  g.append('g').attr('class','grid')
+    .call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(''))
+    .selectAll('.tick line').attr('stroke','var(--surface2)').attr('stroke-dasharray','3,3');
+
+  // Axes
+  g.append('g')
+    .attr('transform',`translate(0,${ih})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+'s'))
+    .selectAll('text').attr('fill','var(--muted)');
+
+  g.append('g')
+    .call(d3.axisLeft(y).ticks(4).tickFormat(d=>d+'k'))
+    .selectAll('text').attr('fill','var(--muted)');
+
+  // Area fill
+  g.append('path')
+    .datum(streamData)
+    .attr('d',area)
+    .attr('class','area-fill');
+
+  // Line
+  g.append('path')
+    .datum(streamData)
+    .attr('d',line)
+    .attr('class','line-path stream');
+
+  // Current value label
+  const last = streamData[streamData.length-1];
+  g.append('text')
+    .attr('x',x(last.t)).attr('y',y(last.v)-8)
+    .attr('text-anchor','end')
+    .attr('fill','var(--accent2)')
+    .attr('font-size','.75rem')
+    .attr('font-weight','600')
+    .text(d3.format('.1f')(last.v)+'k req/s');
+}
+
+// ============================================================
+// BAR CHART — Top Cities
+// ============================================================
+function drawBarChart(filterRegion){
+  const margin = {top:10,right:16,bottom:24,left:4};
+  const w = 500, h = 240;
+  const iw = w - margin.left - margin.right;
+  const ih = h - margin.top - margin.bottom;
+
+  const svg = d3.select('#barChart');
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  let data = filterRegion === 'all'
+    ? [...cities] : cities.filter(d => d.region === filterRegion);
+  data.sort((a,b) => b.sessions - a.sessions);
+  data = data.slice(0,8);
+
+  const x = d3.scaleBand()
+    .domain(data.map(d=>d.name))
+    .range([0, iw])
+    .padding(.25);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d=>d.sessions)*1.1])
+    .range([ih, 0]);
+
+  g.append('g')
+    .attr('transform',`translate(0,${ih})`)
+    .call(d3.axisBottom(x).tickSize(0))
+    .selectAll('text')
+    .attr('fill','var(--muted)')
+    .attr('font-size','.65rem')
+    .attr('transform','rotate(-20)')
+    .attr('text-anchor','end')
+    .attr('dx','-.3em').attr('dy','.15em');
+
+  // Bars
+  const maxVal = d3.max(data, d=>d.sessions);
+  g.selectAll('.bar-rect')
+    .data(data).enter().append('rect')
+    .attr('class','bar-rect')
+    .attr('x', d => x(d.name))
+    .attr('y', d => y(d.sessions))
+    .attr('width', x.bandwidth())
+    .attr('height', d => ih - y(d.sessions))
+    .attr('rx',3)
+    .attr('fill', d => regionColors[d.region])
+    .on('mouseenter', (e,d) => highlightCity(d.name))
+    .on('mouseleave', clearHighlight);
+
+  // Direct labels
+  g.selectAll('.label-text')
+    .data(data).enter().append('text')
+    .attr('class','label-text')
+    .attr('x', d => x(d.name) + x.bandwidth()/2)
+    .attr('y', d => y(d.sessions) - 4)
+    .text(d => d.sessions.toLocaleString());
+
+  // Annotation on the top bar
+  const top = data[0];
+  g.append('line')
+    .attr('class','annotation-line')
+    .attr('x1', x(top.name)+x.bandwidth()/2)
+    .attr('y1', y(top.sessions)-16)
+    .attr('x2', x(top.name)+x.bandwidth()/2)
+    .attr('y2', y(top.sessions)-28);
+  g.append('text')
+    .attr('class','annotation-text')
+    .attr('x', x(top.name)+x.bandwidth()/2)
+    .attr('y', y(top.sessions)-34)
+    .attr('text-anchor','middle')
+    .text('★ Top');
+}
+
+// ============================================================
+// SCATTER CHART — Latency vs Sessions
+// ============================================================
+function drawScatterChart(filterRegion){
+  const margin = {top:10,right:16,bottom:28,left:40};
+  const w = 500, h = 240;
+  const iw = w - margin.left - margin.right;
+  const ih = h - margin.top - margin.bottom;
+
+  const svg = d3.select('#scatterChart');
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  let data = filterRegion === 'all'
+    ? cities : cities.filter(d => d.region === filterRegion);
+
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(data, d=>d.latency)*1.15])
+    .range([0, iw]);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d=>d.sessions)*1.15])
+    .range([ih, 0]);
+
+  // Grid
+  g.append('g').attr('class','grid')
+    .call(d3.axisLeft(y).ticks(5).tickSize(-iw).tickFormat(''))
+    .selectAll('.tick line').attr('stroke','var(--surface2)').attr('stroke-dasharray','3,3');
+
+  // Axes
+  g.append('g')
+    .attr('transform',`translate(0,${ih})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d=>d+'ms'))
+    .selectAll('text').attr('fill','var(--muted)');
+  g.append('g')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d=>d.toLocaleString()))
+    .selectAll('text').attr('fill','var(--muted)');
+
+  // Axis labels
+  g.append('text')
+    .attr('x', iw/2).attr('y', ih+18)
+    .attr('text-anchor','middle').attr('fill','var(--muted)').attr('font-size','.65rem')
+    .text('Avg Response Time (ms)');
+  g.append('text')
+    .attr('x', -ih/2).attr('y', -28)
+    .attr('text-anchor','middle').attr('fill','var(--muted)').attr('font-size','.65rem')
+    .attr('transform','rotate(-90)')
+    .text('Sessions');
+
+  // Points
+  g.selectAll('circle')
+    .data(data).enter().append('circle')
+    .attr('cx', d => x(d.latency))
+    .attr('cy', d => y(d.sessions))
+    .attr('r', 7)
+    .attr('fill', d => regionColors[d.region])
+    .attr('stroke','#fff').attr('stroke-width',1.5)
+    .attr('opacity',.8)
+    .on('mouseenter', (e,d) => highlightCity(d.name))
+    .on('mouseleave', clearHighlight);
+
+  // City labels adjacent
+  g.selectAll('.label-text')
+    .data(data).enter().append('text')
+    .attr('x', d => x(d.latency) + 10)
+    .attr('y', d => y(d.sessions) + 3)
+    .attr('fill','var(--muted)').attr('font-size','.6rem')
+    .text(d => d.name);
+
+  // Region averages
+  const regions = [...new Set(data.map(d=>d.region))];
+  regions.forEach(r => {
+    const items = data.filter(d=>d.region===r);
+    const avgLat = d3.mean(items, d=>d.latency);
+    const avgSes = d3.mean(items, d=>d.sessions);
+    if(avgLat && avgSes){
+      g.append('circle')
+        .attr('cx', x(avgLat)).attr('cy', y(avgSes))
+        .attr('r', 12).attr('fill','none')
+        .attr('stroke',regionColors[r])
+        .attr('stroke-width',2).attr('opacity',.6);
+      g.append('text')
+        .attr('x', x(avgLat)).attr('y', y(avgSes)-14)
+        .attr('text-anchor','middle').attr('fill',regionColors[r])
+        .attr('font-size','.6rem').attr('font-weight','600')
+        .text(r.toUpperCase());
+    }
+  });
+}
+
+// ============================================================
+// DONUT CHART — Traffic by Region
+// ============================================================
+function drawDonutChart(){
+  const data = d3.rollups(cities, v => d3.sum(v, d=>d.sessions), d=>d.region)
+    .map(([region, value]) => ({region, value}));
+  const total = d3.sum(data, d=>d.value);
+
+  const svg = d3.select('#donutChart');
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform','translate(100,100)');
+
+  const radius = 88;
+  const arc = d3.arc()
+    .innerRadius(52)
+    .outerRadius(radius);
+  const pie = d3.pie()
+    .value(d=>d.value)
+    .sort(null);
+
+  const arcs = g.selectAll('path')
+    .data(pie(data)).enter().append('path')
+    .attr('d', arc)
+    .attr('fill', d => regionColors[d.data.region])
+    .attr('stroke','var(--surface)')
+    .attr('stroke-width',2)
+    .attr('opacity',.85);
+
+  // Center text
+  g.append('text')
+    .attr('text-anchor','middle').attr('y',-4)
+    .attr('font-size','1.4rem').attr('font-weight','700').attr('fill','var(--text)')
+    .text(d3.format('.0f')(total/1000)+'k');
+  g.append('text')
+    .attr('text-anchor','middle').attr('y',14)
+    .attr('font-size','.65rem').attr('fill','var(--muted)')
+    .text('sessions');
+
+  // Legend
+  const legend = d3.select('#donutLegend');
+  legend.selectAll('*').remove();
+  data.forEach(d => {
+    const pct = ((d.value/total)*100).toFixed(1);
+    legend.append('span').attr('class','legend-item').html(`
+      <span class="legend-swatch" style="background:${regionColors[d.region]}"></span>
+      ${d.region.toUpperCase()} ${pct}%
+    `);
+  });
+}
+
+// ============================================================
+// HIGHLIGHT / INTERACTION COORDINATION
+// ============================================================
+let highlightedCity = null;
+
+function highlightCity(name){
+  highlightedCity = name;
+  document.querySelectorAll('.map-point').forEach((el,i) => {
+    const city = cities[i];
+    if(city && city.name === name){
+      el.setAttribute('opacity','1');
+      el.setAttribute('r', parseFloat(el.getAttribute('r')) * 1.4);
+    } else if(city) {
+      el.setAttribute('opacity','.25');
+    }
+  });
+}
+function clearHighlight(){
+  highlightedCity = null;
+  document.querySelectorAll('.map-point').forEach((el,i) => {
+    const city = cities[i];
+    if(city){
+      const rScale = d3.scaleSqrt().domain([0, d3.max(cities, d=>d.sessions)]).range([4, 18]);
+      el.setAttribute('r', rScale(city.sessions));
+      el.setAttribute('opacity', '.85');
+    }
+  });
+}
+
+// ============================================================
+// APPLY STATE & RENDER ALL
+// ============================================================
+function applyState(s){
+  document.querySelectorAll('.control-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.region === s.region);
+  });
+
+  drawMap(s.region);
+  drawStreamChart(s.region);
+  drawBarChart(s.region);
+  drawScatterChart(s.region);
+  drawDonutChart();
+}
+
+// ============================================================
+// STREAMING SIMULATION (live update every 1.5s)
+// ============================================================
+function pushStreamValue(){
+  const base = 40 + Math.sin(Date.now()/3000)*12;
+  const noise = (Math.random()-0.5)*15;
+  const v = Math.max(5, base + noise);
+  streamData.push({t: streamData.length, v});
+  if(streamData.length > streamMaxPoints) streamData.shift();
+  // Re-index time
+  streamData.forEach((d,i) => d.t = i);
+
+  drawStreamChart(state.region);
+
+  // Update last-updated timestamp
+  document.getElementById('lastUpdated').textContent =
+    'Updated ' + new Date().toLocaleTimeString();
+}
+
+// ============================================================
+// FILTER CONTROLS + HASH SYNC
+// ============================================================
+document.getElementById('filterBar').addEventListener('click', e => {
+  const btn = e.target.closest('.control-btn');
+  if(!btn) return;
+  const region = btn.dataset.region;
+  state.region = region;
+  setState(state);
+});
+
+window.addEventListener('hashchange', () => {
+  state = getState();
+  applyState(state);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+applyState(state);
+
+// Start streaming
+setInterval(pushStreamValue, 1500);
+
+// Update KPIs periodically
+setInterval(() => {
+  const baseSessions = 12847;
+  const jitter = Math.round((Math.random()-0.5)*400);
+  const sessions = baseSessions + jitter;
+  document.getElementById('kpiSessions').textContent = sessions.toLocaleString();
+  document.getElementById('kpiRevenue').textContent =
+    '$' + ((48.2 + (Math.random()-0.5)*3).toFixed(1)) + 'k';
+  document.getElementById('kpiErrors').textContent =
+    (0.34 + (Math.random()-0.5)*0.1).toFixed(2) + '%';
+  document.getElementById('kpiLatency').textContent =
+    Math.round(42 + (Math.random()-0.5)*8) + 'ms';
+}, 3000);
+
+console.log('🌍 Global Operations Dashboard initialized.');
+console.log('Active filter:', state.region);
+console.log('Cities loaded:', cities.length);
+</script>
+</body>
+</html>

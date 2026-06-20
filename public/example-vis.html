@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Monthly Revenue — Data Visualization Example</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8f9fa;display:flex;justify-content:center;padding:2rem}
+figure{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:2rem 2rem 1.5rem;max-width:720px;width:100%}
+h2{font-weight:600;font-size:1.25rem;color:#1a1a2e;margin-bottom:.25rem}
+figcaption{color:#64748b;font-size:.875rem;margin-bottom:1.5rem}
+.chart-wrap{position:relative;overflow-x:auto}
+.bar{fill:#3b82f6;transition:fill .2s}
+.bar:hover{fill:#2563eb}
+.axis text{font-size:.75rem;fill:#64748b}
+.axis .domain,.axis .tick line{stroke:#e2e8f0}
+.label{font-size:.7rem;fill:#1e293b;text-anchor:middle;font-weight:500}
+.anno{font-size:.75rem;fill:#ef4444;font-weight:600}
+.annotation-line{stroke:#ef4444;stroke-width:1;stroke-dasharray:4}
+</style>
+</head>
+<body>
+<figure>
+  <h2>Monthly Revenue</h2>
+  <figcaption>Jan–Jun 2026 · Direct labels and annotation highlight the peak month</figcaption>
+  <div class="chart-wrap">
+    <svg id="chart" viewBox="0 0 640 360"></svg>
+  </div>
+</figure>
+<script>
+const data = [
+  {month:'Jan',rev:4200},{month:'Feb',rev:5100},{month:'Mar',rev:4800},
+  {month:'Apr',rev:6300},{month:'May',rev:5900},{month:'Jun',rev:7200}
+];
+
+const margin = {top:30,right:24,bottom:40,left:48};
+const width = 640 - margin.left - margin.right;
+const height = 360 - margin.top - margin.bottom;
+
+const svg = d3.select('#chart')
+  .append('g')
+  .attr('transform',`translate(${margin.left},${margin.top})`);
+
+const x = d3.scaleBand().domain(data.map(d=>d.month)).range([0,width]).padding(.3);
+const y = d3.scaleLinear().domain([0,8000]).range([height,0]);
+
+svg.append('g')
+  .attr('class','axis')
+  .attr('transform',`translate(0,${height})`)
+  .call(d3.axisBottom(x).tickSize(0));
+
+svg.append('g')
+  .attr('class','axis')
+  .call(d3.axisLeft(y).ticks(5).tickFormat(d=>'$'+(d/1000).toFixed(0)+'k').tickSize(-width));
+
+svg.selectAll('.bar')
+  .data(data).enter().append('rect')
+  .attr('class','bar')
+  .attr('x',d=>x(d.month))
+  .attr('y',d=>y(d.rev))
+  .attr('width',x.bandwidth())
+  .attr('height',d=>height-y(d.rev))
+  .attr('rx',4);
+
+svg.selectAll('.label')
+  .data(data).enter().append('text')
+  .attr('class','label')
+  .attr('x',d=>x(d.month)+x.bandwidth()/2)
+  .attr('y',d=>y(d.rev)-6)
+  .text(d=>'$'+d.rev.toLocaleString());
+
+// Annotation: peak month callout
+svg.append('line')
+  .attr('class','annotation-line')
+  .attr('x1',x('Jun')+x.bandwidth()/2).attr('y1',y(7200)-18)
+  .attr('x2',x('Jun')+x.bandwidth()/2).attr('y2',y(7200)-38);
+
+svg.append('text')
+  .attr('class','anno')
+  .attr('x',x('Jun')+x.bandwidth()/2)
+  .attr('y',y(7200)-44)
+  .attr('text-anchor','middle')
+  .text('↑ Peak');
+</script>
+</body>
+</html>
