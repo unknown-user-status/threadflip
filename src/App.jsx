@@ -1,182 +1,231 @@
-import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
-import SkillRadar from './components/SkillRadar'
-import Timeline from './components/Timeline'
-import ActivityGrid from './components/ActivityGrid'
-import DashboardDemo from './components/DashboardDemo'
+import Dashboard from './Dashboard'
 
-function ThemeToggle({ theme, onToggle }) {
+function App() {
   return (
-    <button className="theme-toggle" onClick={onToggle} aria-label="Toggle theme">
-      {theme === 'dark' ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-        </svg>
-      )}
-    </button>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/pricing" element={<PricingPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
-export default function App() {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'light'
-    }
-    return 'light'
-  })
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
-
+function Landing() {
   return (
-    <>
-      <ThemeToggle theme={theme} onToggle={toggleTheme} />
+    <div className="landing">
+      {/* Nav */}
+      <nav className="nav">
+        <div className="nav-inner">
+          <Link to="/" className="logo">ThreadFlip</Link>
+          <div className="nav-links">
+            <a href="#features">Features</a>
+            <Link to="/pricing">Pricing</Link>
+            <Link to="/dashboard" className="btn btn-primary btn-sm">Get Started</Link>
+          </div>
+        </div>
+      </nav>
 
-      {/* ── Hero ── */}
-      <header className="hero">
-        <div className="hero-badge">Design Engineer · 2026</div>
-        <h1 className="hero-title">
-          Ilham
-        </h1>
+      {/* Hero */}
+      <section className="hero-section">
+        <div className="hero-badge">Turn tweets into content ✦</div>
+        <h1 className="hero-title">Your Twitter threads,<br />repurposed in seconds.</h1>
         <p className="hero-desc">
-          Building tools, systems, and visual interfaces for the web.
-          Currently focused on design infrastructure and data visualization.
+          Paste a tweet URL. Get a LinkedIn post, blog draft, newsletter, or short-form content.
+          No more staring at a blank page.
         </p>
-        <div className="hero-links">
-          <a href="#" className="hero-link">GitHub</a>
-          <a href="#" className="hero-link">Twitter</a>
-          <button className="hero-link hero-email" onClick={e => { navigator.clipboard.writeText("hello@ilham.dev"); e.target.textContent = "Copied!"; setTimeout(() => e.target.textContent = "hello@ilham.dev", 1800); }}>hello@ilham.dev</button>
-          <a href="https://github.com" className="hero-link hero-link-external">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Portfolio
-          </a>
+        <div className="hero-cta">
+          <Link to="/dashboard" className="btn btn-primary btn-lg">
+            Try it free →
+          </Link>
         </div>
-      </header>
-
-      {/* ── Work Section ── */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Work</h2>
-          <span className="section-count">3 roles</span>
-        </div>
-        <div className="work-grid">
-          <div className="work-card">
-            <span className="work-year">2024 — present</span>
-            <h3>Staff Engineer · Acme Corp</h3>
-            <p>Building the design systems platform powering 200+ product teams.</p>
-            <div className="work-tags">
-              <span className="tag">Design Systems</span>
-              <span className="tag">React</span>
-              <span className="tag">Platform</span>
-            </div>
+        <div className="hero-preview">
+          <div className="preview-card">
+            <div className="preview-label">Original tweet</div>
+            <p className="preview-text">"Just shipped a new feature that reduces API latency by 40%. Thread below on how we did it..."</p>
           </div>
-          <div className="work-card">
-            <span className="work-year">2021 — 2024</span>
-            <h3>Senior Frontend · Linear</h3>
-            <p>Led the rewrite of the issue tracking surface and real-time collaboration layer.</p>
-            <div className="work-tags">
-              <span className="tag">Real-time</span>
-              <span className="tag">React</span>
-              <span className="tag">GraphQL</span>
-            </div>
-          </div>
-          <div className="work-card">
-            <span className="work-year">2019 — 2021</span>
-            <h3>Full-Stack · Stripe</h3>
-            <p>Built dashboard infrastructure for the Connect platform team.</p>
-            <div className="work-tags">
-              <span className="tag">Portfolios</span>
-              <span className="tag">APIs</span>
-              <span className="tag">Payments</span>
-            </div>
+          <div className="preview-arrow">→</div>
+          <div className="preview-card preview-card-out">
+            <div className="preview-label">LinkedIn</div>
+            <p className="preview-text">Excited to share a deep dive on how we cut API latency by 40% at Acme Corp. A few key lessons: 1) Measure first, optimize second...</p>
           </div>
         </div>
       </section>
 
-      {/* ── DataViz Section ── */}
-      <section className="section section-dataviz">
-        <div className="section-header">
-          <h2>Data Visualization</h2>
-          <span className="section-count">D3 · Real-time · Interactive</span>
-        </div>
-        <p className="section-desc">
-          Interactive data visualization components built with D3.js and React.
-          Each visualization is responsive, accessible, and uses direct labels.
-        </p>
-        <div className="viz-grid">
-          <SkillRadar />
-          <Timeline />
-          <ActivityGrid />
-          <DashboardDemo />
-        </div>
-      </section>
-
-      {/* ── Projects ── */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Projects</h2>
-          <span className="section-count">Open source</span>
-        </div>
-        <div className="project-grid">
-          <a href="#" className="project-card">
-            <div className="project-icon">◆</div>
-            <h3>Rivet</h3>
-            <p>Open-source state machine for React. 4k+ stars on GitHub.</p>
-            <span className="project-meta">React · TypeScript</span>
-          </a>
-          <a href="#" className="project-card">
-            <div className="project-icon">▲</div>
-            <h3>Pitch</h3>
-            <p>Lightweight presentation tool built on Web Components.</p>
-            <span className="project-meta">Web Components · Lit</span>
-          </a>
-          <a href="#" className="project-card">
-            <div className="project-icon">●</div>
-            <h3>Typo</h3>
-            <p>Typography scale generator with variable font previews.</p>
-            <span className="project-meta">CSS · Font Tools</span>
-          </a>
+      {/* How it works */}
+      <section className="section" id="features">
+        <h2 className="section-title">How it works</h2>
+        <div className="steps">
+          <div className="step">
+            <span className="step-num">1</span>
+            <h3>Paste a tweet URL</h3>
+            <p>Any public tweet or thread — just copy the link and paste it in.</p>
+          </div>
+          <div className="step-connector" />
+          <div className="step">
+            <span className="step-num">2</span>
+            <h3>Choose your format</h3>
+            <p>LinkedIn post, blog draft, newsletter, or Twitter thread summary.</p>
+          </div>
+          <div className="step-connector" />
+          <div className="step">
+            <span className="step-num">3</span>
+            <h3>Copy & publish</h3>
+            <p>Get clean, ready-to-publish content in seconds. No editing needed.</p>
+          </div>
         </div>
       </section>
 
-      {/* ── Writing ── */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Writing</h2>
-          <span className="section-count">Latest posts</span>
-        </div>
-        <div className="writing-list">
-          <a href="#" className="writing-card">
-            <span className="writing-date">Feb 2026</span>
-            <div>
-              <h3>On Design Systems at Scale</h3>
-              <p>Lessons from maintaining a component library used by hundreds of engineers.</p>
-            </div>
-            <svg className="writing-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </a>
-          <a href="#" className="writing-card">
-            <span className="writing-date">Nov 2025</span>
-            <div>
-              <h3>Rethinking State Machines</h3>
-              <p>Why deterministic UI is the next frontier for frontend architecture.</p>
-            </div>
-            <svg className="writing-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </a>
+      {/* Features */}
+      <section className="section section-features">
+        <h2 className="section-title">Why ThreadFlip?</h2>
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon">⚡</div>
+            <h3>10x faster</h3>
+            <p>Turn hours of rewriting into seconds. One click, multiple formats.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🎯</div>
+            <h3>Platform-optimized</h3>
+            <p>Each format is tuned for its platform — LinkedIn tone, blog structure, newsletter style.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>Track everything</h3>
+            <p>Dashboard shows your conversion history. See what works best.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🔒</div>
+            <h3>Your content stays yours</h3>
+            <p>We never train on your data. Conversions are private to your account.</p>
+          </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* Pricing */}
+      <section className="section section-pricing" id="pricing">
+        <h2 className="section-title">Simple pricing</h2>
+        <p className="section-desc">Start free. Upgrade when you need more.</p>
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <h3>Free</h3>
+            <p className="price">$0</p>
+            <p className="price-desc">Try it out</p>
+            <ul>
+              <li>5 conversions / month</li>
+              <li>3 formats</li>
+              <li>Basic support</li>
+            </ul>
+            <Link to="/dashboard" className="btn btn-outline">Get Started</Link>
+          </div>
+          <div className="pricing-card pricing-card-featured">
+            <div className="pricing-badge">Popular</div>
+            <h3>Pro</h3>
+            <p className="price">$12</p>
+            <p className="price-desc">per month</p>
+            <ul>
+              <li>Unlimited conversions</li>
+              <li>All formats</li>
+              <li>Priority support</li>
+              <li>Export history</li>
+            </ul>
+            <button className="btn btn-primary" disabled>Coming soon</button>
+          </div>
+          <div className="pricing-card">
+            <h3>Business</h3>
+            <p className="price">$29</p>
+            <p className="price-desc">per month</p>
+            <ul>
+              <li>Everything in Pro</li>
+              <li>Team seats (up to 5)</li>
+              <li>API access</li>
+              <li>Custom branding</li>
+            </ul>
+            <button className="btn btn-outline" disabled>Coming soon</button>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="section cta-section">
+        <h2>Start repurposing your content.</h2>
+        <p>Paste your first tweet. See what you get back.</p>
+        <Link to="/dashboard" className="btn btn-primary btn-lg">
+          Try it free →
+        </Link>
+      </section>
+
+      {/* Footer */}
       <footer className="footer">
-        <p>&copy; 2026 Ilham · Built with React + D3</p>
+        <p>© 2026 ThreadFlip. Built with React + Stripe.</p>
       </footer>
-    </>
+    </div>
   )
 }
+
+function PricingPage() {
+  return (
+    <div className="landing">
+      <nav className="nav">
+        <div className="nav-inner">
+          <Link to="/" className="logo">ThreadFlip</Link>
+          <div className="nav-links">
+            <Link to="/">Home</Link>
+            <Link to="/dashboard" className="btn btn-primary btn-sm">Get Started</Link>
+          </div>
+        </div>
+      </nav>
+      <section className="section section-pricing" style={{ paddingTop: 80 }}>
+        <h2 className="section-title">Simple pricing</h2>
+        <p className="section-desc">Start free. Upgrade when you need more.</p>
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <h3>Free</h3>
+            <p className="price">$0</p>
+            <p className="price-desc">Try it out</p>
+            <ul>
+              <li>5 conversions / month</li>
+              <li>3 formats</li>
+              <li>Basic support</li>
+            </ul>
+            <Link to="/dashboard" className="btn btn-outline">Get Started</Link>
+          </div>
+          <div className="pricing-card pricing-card-featured">
+            <div className="pricing-badge">Popular</div>
+            <h3>Pro</h3>
+            <p className="price">$12</p>
+            <p className="price-desc">per month</p>
+            <ul>
+              <li>Unlimited conversions</li>
+              <li>All formats</li>
+              <li>Priority support</li>
+              <li>Export history</li>
+            </ul>
+            <button className="btn btn-primary" disabled>Coming soon</button>
+          </div>
+          <div className="pricing-card">
+            <h3>Business</h3>
+            <p className="price">$29</p>
+            <p className="price-desc">per month</p>
+            <ul>
+              <li>Everything in Pro</li>
+              <li>Team seats (up to 5)</li>
+              <li>API access</li>
+              <li>Custom branding</li>
+            </ul>
+            <button className="btn btn-outline" disabled>Coming soon</button>
+          </div>
+        </div>
+      </section>
+      <footer className="footer">
+        <p>© 2026 ThreadFlip.</p>
+      </footer>
+    </div>
+  )
+}
+
+export default App
