@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 const FORMATS = [
-  { id: 'linkedin', label: 'LinkedIn Post', icon: '💼' },
-  { id: 'blog', label: 'Blog Draft', icon: '📝' },
-  { id: 'newsletter', label: 'Newsletter', icon: '📧' },
-  { id: 'summary', label: 'Thread Summary', icon: '🧵' },
+  { id: 'linkedin', label: 'LinkedIn Post', icon: '\u{1F4BC}' },
+  { id: 'blog', label: 'Blog Draft', icon: '\u{1F4DD}' },
+  { id: 'newsletter', label: 'Newsletter', icon: '\u{1F4E7}' },
+  { id: 'summary', label: 'Thread Summary', icon: '\u{1F9F5}' },
 ]
 
 export default function Dashboard() {
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [error, setError] = useState('')
   const [detectedPlatform, setDetectedPlatform] = useState('')
 
-  // ── Provider state ──
+  // Provider state
   const [providers, setProviders] = useState([])
   const [activeProvider, setActiveProvider] = useState('openai')
   const [activeModel, setActiveModel] = useState('gpt-4o-mini')
@@ -29,10 +29,11 @@ export default function Dashboard() {
   const [providerKey, setProviderKey] = useState('')
   const [providerBaseUrl, setProviderBaseUrl] = useState('')
   const [providerStatus, setProviderStatus] = useState('')
+  const [customModel, setCustomModel] = useState('')
+  const [showModelPicker, setShowModelPicker] = useState(false)
 
   const FREE_LIMIT = 5
 
-  // Load from session storage
   useEffect(() => {
     const saved = sessionStorage.getItem('tf_email')
     const hist = sessionStorage.getItem('tf_history')
@@ -40,7 +41,7 @@ export default function Dashboard() {
     if (hist) setHistory(JSON.parse(hist))
   }, [])
 
-  // Fetch available providers on mount
+  // Fetch providers on mount
   useEffect(() => {
     fetch('/api/models')
       .then(r => r.json())
@@ -57,7 +58,7 @@ export default function Dashboard() {
       .catch(() => {})
   }, [])
 
-  // Detect platform from URL
+  // Detect platform
   useEffect(() => {
     if (!url) { setDetectedPlatform(''); return }
     if (/x\.com|twitter\.com/i.test(url)) setDetectedPlatform('\u{1F426} Twitter / X')
@@ -73,7 +74,6 @@ export default function Dashboard() {
     else setDetectedPlatform('\u{1F517} Unknown')
   }, [url])
 
-  // Sign in
   const handleSignIn = async () => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Please enter a valid email')
@@ -96,7 +96,6 @@ export default function Dashboard() {
     }
   }
 
-  // Convert
   const handleConvert = async () => {
     if (!url.trim()) return
     setLoading(true)
@@ -105,7 +104,7 @@ export default function Dashboard() {
       const res = await fetch('/api/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), format: selectedFormat, email: signedIn ? email : undefined }),
+        body: JSON.stringify({ url: url.trim(), format: selectedFormat, model: activeModel, email: signedIn ? email : undefined }),
       })
       const data = await res.json()
       if (data.error) { setError(data.error); setLoading(false); return }
@@ -131,27 +130,28 @@ export default function Dashboard() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Switch provider
-  const handleSwitchProvider = async (providerId) => {
+  // Switch provider with optional custom model
+  const handleSwitchProvider = async (providerId, modelOverride) => {
     const p = providers.find(x => x.id === providerId)
     if (!p) return
 
     const key = providerKey || undefined
     const baseUrl = (providerId === 'custom' && providerBaseUrl) ? providerBaseUrl : undefined
+    // Use customModel if provided, else modelOverride, else provider default
+    const model = (customModel && customModel.trim()) || modelOverride || p.defaultModel
 
     setProviderStatus('Switching...')
     try {
       const res = await fetch('/api/provider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: providerId, model: p.defaultModel, apiKey: key, baseUrl }),
+        body: JSON.stringify({ provider: providerId, model, apiKey: key, baseUrl }),
       })
       const data = await res.json()
       if (data.ok) {
         setActiveProvider(providerId)
         setActiveModel(data.model)
         setProviderStatus('Active: ' + data.model)
-        // Refresh model list
         const r2 = await fetch('/api/models')
         const d2 = await r2.json()
         if (d2.providers) setProviders(d2.providers)
@@ -163,6 +163,8 @@ export default function Dashboard() {
     }
   }
 
+  const currentProvider = providers.find(p => p.id === activeProvider)
+
   // ── Auth screen ──
   if (!signedIn) {
     return (
@@ -170,7 +172,7 @@ export default function Dashboard() {
         <main className="dashboard-main" style={{ maxWidth: 400, margin: '0 auto', paddingTop: 80 }}>
           <Link to="/" className="logo" style={{ fontSize: 24, display: 'block', textAlign: 'center', marginBottom: 32 }}>ThreadFlip</Link>
           <h1 style={{ textAlign: 'center', marginBottom: 8 }}>Sign in to continue</h1>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 24, fontSize: 14 }}>Enter your email to get started. No password needed.</p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 24, fontSize: 14 }}>Enter your email to get started.</p>
           <div className="convert-card">
             <label className="convert-label">Email address</label>
             <input
@@ -197,7 +199,7 @@ export default function Dashboard() {
         <nav className="sidebar-nav">
           <a href="#" className="sidebar-link active" onClick={e => { e.preventDefault(); setShowProviderPanel(false) }}>Convert</a>
           <a href="#" className="sidebar-link" onClick={e => { e.preventDefault(); setShowProviderPanel(!showProviderPanel) }}>
-            {showProviderPanel ? 'AI Settings' : 'AI Settings'}
+            AI Settings
           </a>
         </nav>
         <div className="sidebar-usage">
@@ -222,10 +224,10 @@ export default function Dashboard() {
           /* ── Provider Settings Panel ── */
           <div>
             <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: 14 }}>
-              Switch between AI providers at runtime. Changes take effect immediately for the next conversion.
-              For permanent config, set env vars in Vercel dashboard.
+              Switch providers or set any model name. Changes take effect immediately.
             </p>
 
+            {/* Provider cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               {providers.map(p => (
                 <div
@@ -237,7 +239,9 @@ export default function Dashboard() {
                     background: activeProvider === p.id ? 'var(--accent-light)' : 'var(--surface)',
                     cursor: 'pointer',
                   }}
-                  onClick={() => handleSwitchProvider(p.id)}
+                  onClick={() => {
+                    setShowModelPicker(showModelPicker === p.id ? null : p.id)
+                  }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong>{p.label}</strong>
@@ -246,16 +250,76 @@ export default function Dashboard() {
                   <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
                     Model: {activeProvider === p.id ? activeModel : p.defaultModel}
                   </div>
-                  {p.models.length > 0 && (
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                      {p.models.length} model{p.models.length !== 1 ? 's' : ''} available
+
+                  {/* Expanded model picker */}
+                  {showModelPicker === p.id && (
+                    <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Select a model:</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+                        {p.models.length > 0 ? (
+                          p.models.map(m => (
+                            <button
+                              key={m}
+                              style={{
+                                textAlign: 'left',
+                                padding: '6px 12px',
+                                border: `1px solid ${activeModel === m && activeProvider === p.id ? 'var(--accent)' : 'var(--border)'}`,
+                                borderRadius: '6px',
+                                background: activeModel === m && activeProvider === p.id ? 'var(--accent-light)' : 'transparent',
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                fontFamily: 'inherit',
+                                color: 'var(--text)',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSwitchProvider(p.id, m)
+                                setShowModelPicker(null)
+                              }}
+                            >
+                              {m}
+                            </button>
+                          ))
+                        ) : (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                            {p.id === 'custom' ? 'Enter any model name below.' : 'No predefined models.'}
+                          </div>
+                        )}
+                      </div>
+                      {/* Quick activate without model change */}
+                      <button
+                        className="btn btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSwitchProvider(p.id)
+                          setShowModelPicker(null)
+                        }}
+                        style={{ fontSize: 12 }}
+                      >
+                        Activate with default model
+                      </button>
                     </div>
                   )}
                 </div>
               ))}
             </div>
 
-            {/* Custom provider fields */}
+            {/* Custom model input */}
+            <div className="convert-card">
+              <label className="convert-label">Custom Model Name (optional — overrides selection)</label>
+              <input
+                className="convert-input"
+                type="text"
+                placeholder={currentProvider ? `e.g. ${currentProvider.defaultModel}` : 'gpt-4o-mini'}
+                value={customModel}
+                onChange={e => setCustomModel(e.target.value)}
+              />
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                Type any model name. Leave empty to use the selected model from above.
+              </p>
+            </div>
+
+            {/* API Key & Base URL */}
             <div className="convert-card">
               <label className="convert-label">API Key (override, optional)</label>
               <input
@@ -277,12 +341,19 @@ export default function Dashboard() {
               />
             </div>
 
+            {/* Apply */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <button className="btn btn-primary" onClick={() => handleSwitchProvider(activeProvider)}>
+              <button className="btn btn-primary" onClick={() => {
+                handleSwitchProvider(activeProvider)
+                setShowModelPicker(null)
+              }}>
                 Apply Settings
               </button>
               {providerStatus && (
-                <span style={{ fontSize: 13, color: providerStatus.startsWith('Active') ? 'var(--success, #22c55e)' : '#ef4444' }}>
+                <span style={{
+                  fontSize: 13,
+                  color: providerStatus.startsWith('Active') ? '#22c55e' : '#ef4444'
+                }}>
                   {providerStatus}
                 </span>
               )}
@@ -291,7 +362,6 @@ export default function Dashboard() {
         ) : (
           /* ── Convert Panel ── */
           <>
-            {/* URL input */}
             <div className="convert-card">
               <label className="convert-label">
                 Paste URL
@@ -308,7 +378,6 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Format picker */}
             <div className="format-picker">
               <label className="convert-label">Convert to</label>
               <div className="format-grid">
@@ -325,7 +394,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Convert button */}
             {error && <p style={{ color: '#ef4444', fontSize: 14, marginBottom: 16 }}>{error}</p>}
             <button
               className="btn btn-primary btn-lg convert-btn"
@@ -335,7 +403,6 @@ export default function Dashboard() {
               {loading ? 'Converting...' : 'Convert \u2192'}
             </button>
 
-            {/* Result */}
             {result && (
               <div className="result-card">
                 <div className="result-header">
@@ -348,7 +415,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* History */}
             {history.length > 0 && (
               <div className="history-section">
                 <h3>Recent conversions</h3>

@@ -213,7 +213,7 @@ app.post('/api/provider', express.json(), (req, res) => {
       return res.status(400).json({ error: 'API key required' })
     }
     aiClient = initProvider(provider, key, model, baseUrl)
-    res.json({ provider: activeProvider, model: aiModel, ok: !!aiClient })
+    res.json({ provider: activeProvider, model: reqModel || aiModel, ok: !!aiClient })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -222,7 +222,7 @@ app.post('/api/provider', express.json(), (req, res) => {
 // ── Convert ──
 app.post('/api/convert', async (req, res) => {
   try {
-    const { url, format } = req.body
+    const { url, format, model: reqModel } = req.body
     if (!url || !format) return res.status(400).json({ error: 'url and format required' })
     if (!['linkedin', 'blog', 'newsletter', 'summary'].includes(format)) {
       return res.status(400).json({ error: 'Invalid format' })
@@ -237,7 +237,7 @@ app.post('/api/convert', async (req, res) => {
     if (aiClient) {
       try {
         const completion = await aiClient.chat.completions.create({
-          model: aiModel,
+          model: reqModel || aiModel,
           messages: [
             { role: 'system', content: 'You repurpose social media content for different platforms. Keep meaning, adapt tone.' },
             { role: 'user', content: PROMPTS[format] + '\n\nURL: ' + url + '\n(If inaccessible, generate plausible content about tech, productivity, or design.)' },
